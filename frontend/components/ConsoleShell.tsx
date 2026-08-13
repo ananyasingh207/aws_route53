@@ -24,6 +24,7 @@ export default function ConsoleShell({
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -33,12 +34,25 @@ export default function ConsoleShell({
     }
   }, []);
 
+  // Clear navigation loading indicator when destination page mounts and activeHref updates
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [activeHref]);
+
   if (!mounted) {
     return <div style={{ minHeight: "100vh" }} />;
   }
 
+  const handleNavigate = (href: string) => {
+    if (href !== activeHref) {
+      setIsNavigating(true);
+    }
+    router.push(href);
+  };
+
   const handleTopNavClick = async (event: CustomEvent<{ id: string }>) => {
     if (event.detail.id === "signout") {
+      setIsNavigating(true);
       await logout();
       router.push("/login");
     }
@@ -51,13 +65,12 @@ export default function ConsoleShell({
           identity={{
             href: "/dashboard",
             title: "Amazon Route 53",
+            onFollow: (event) => {
+              event.preventDefault();
+              handleNavigate("/dashboard");
+            },
           }}
           utilities={[
-            {
-              type: "button",
-              text: "Feedback",
-              ariaLabel: "Feedback",
-            },
             {
               type: "button",
               iconName: "settings",
@@ -70,7 +83,6 @@ export default function ConsoleShell({
               iconName: "user-profile",
               onItemClick: handleTopNavClick,
               items: [
-                { id: "profile", text: "Account Details" },
                 { id: "signout", text: "Sign Out" },
               ],
             },
@@ -84,17 +96,20 @@ export default function ConsoleShell({
               ariaLabel="Breadcrumbs"
               onFollow={(event) => {
                 event.preventDefault();
-                router.push(event.detail.href);
+                handleNavigate(event.detail.href);
               }}
             />
           }
           navigation={
             <SideNavigation
               activeHref={activeHref}
-              header={{ text: "Route 53", href: "/dashboard" }}
+              header={{
+                text: "Route 53",
+                href: "/dashboard",
+              }}
               onFollow={(event) => {
                 event.preventDefault();
-                router.push(event.detail.href);
+                handleNavigate(event.detail.href);
               }}
               items={[
                 { type: "link", text: "Dashboard", href: "/dashboard" },

@@ -90,11 +90,6 @@ def validate_dns_record_value(rec_type: str, val: str) -> str:
     return val_clean
 
 
-# ==========================================
-# USER SCHEMAS
-# ==========================================
-
-
 class UserBase(BaseModel):
     name: str = Field(..., min_length=1, description="User full name")
     email: EmailStr = Field(..., description="User email address")
@@ -125,11 +120,6 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ==========================================
-# AUTHENTICATION SCHEMAS
-# ==========================================
-
-
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., description="User login email")
     password: str = Field(..., description="User login password")
@@ -140,11 +130,6 @@ class AuthResponse(BaseModel):
     user: UserResponse
     access_token: str
     token_type: str = "bearer"
-
-
-# ==========================================
-# HOSTED ZONE SCHEMAS
-# ==========================================
 
 
 class HostedZoneBase(BaseModel):
@@ -231,11 +216,6 @@ class HostedZoneListResponse(BaseModel):
     total: int
     page: int
     limit: int
-
-
-# ==========================================
-# DNS RECORD SCHEMAS
-# ==========================================
 
 
 class DNSRecordBase(BaseModel):

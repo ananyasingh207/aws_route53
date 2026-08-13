@@ -77,7 +77,6 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const parsed = parseApiError(err, "auth");
       setErrorMessage(parsed.message);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -90,6 +89,7 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
+        backgroundColor: "#0f1b2a",
         padding: "24px 16px",
         boxSizing: "border-box",
       }}

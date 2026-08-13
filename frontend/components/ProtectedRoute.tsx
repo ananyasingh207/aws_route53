@@ -18,13 +18,21 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (isLoading) {
     return (
-      <Box
-        margin={{ top: "xxxl" }}
-        textAlign="center"
-        padding={{ vertical: "xxxl" }}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          backgroundColor: "#ffffff",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
       >
-        <Spinner size="large" />
-      </Box>
+        <Box textAlign="center">
+          <Spinner size="large" />
+        </Box>
+      </div>
     );
   }
 

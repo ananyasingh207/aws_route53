@@ -7,15 +7,34 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+button[class*="navigation-toggle"],
+button[aria-label*="navigation"],
+[data-aria-label*="navigation"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+button[class*="navigation-toggle"] span,
+button[aria-label*="navigation"] span,
+[data-aria-label*="navigation"] span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+button[class*="navigation-toggle"] svg,
+button[aria-label*="navigation"] svg,
+[data-aria-label*="navigation"] svg {
+  display: block !important;
+  margin: auto !important;
 }

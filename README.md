@@ -9,10 +9,13 @@
 
 A full-stack educational clone of the **Amazon Route 53 console**, engineered with **Next.js 14**, **FastAPI**, **SQLAlchemy 2.x**, **SQLite**, and the official **AWS Cloudscape Design System**.
 
-This application reproduces the look, layout, workflow, and user experience of the official AWS Route 53 management console. It provides multi-tenant Hosted Zone management, Resource Record Sets management across 9 supported DNS record types, debounced server-side search, type filtering, server-side pagination, and HttpOnly cookie-based session authentication.
+🔗 **Live Application Demo**: [https://aws-route53-red.vercel.app](https://aws-route53-red.vercel.app)  
+📖 **Live OpenAPI / Swagger Docs**: [https://aws-route53-i9ow.onrender.com/docs](https://aws-route53-i9ow.onrender.com/docs)
+
+This application reproduces the look, layout, workflow, and user experience of the official AWS Route 53 management console. It provides multi-tenant Hosted Zone management, Resource Record Sets management across 9 supported DNS record types, debounced server-side search, type filtering, server-side pagination, and dual JWT authentication (Bearer header & HttpOnly cookie).
 
 > [!IMPORTANT]
-> **Educational Clone Disclaimer**: This project is built for educational, learning, and portfolio demonstration purposes. It **does not connect to live AWS services**, does not register domain names, and does not alter public internet DNS routing.
+> **Educational Clone Disclaimer**: This project is built for educational and portfolio demonstration purposes. It **does not connect to live AWS services**, does not register domain names, and does not alter public internet DNS routing.
 
 ---
 
@@ -26,6 +29,7 @@ This application reproduces the look, layout, workflow, and user experience of t
 - [API Specification](#-api-specification)
 - [Frontend Architecture & Cloudscape UI](#-frontend-architecture--cloudscape-ui)
 - [User-Friendly Error Handling](#-user-friendly-error-handling)
+- [Assumptions & Limitations](#-assumptions--limitations)
 - [Repository Structure](#-repository-structure)
 - [Local Setup & Installation](#-local-setup--installation)
 - [Deployment & Environment Variables](#-deployment--environment-variables)
@@ -39,7 +43,7 @@ Amazon Route 53 is AWS's highly available and scalable cloud Domain Name System 
 
 - **Hosted Zones Management**: Create, list, search, paginate, edit, and delete Public and Private Hosted Zones.
 - **Resource Record Sets**: Create, search, filter, paginate, edit, and delete DNS records inside Hosted Zones across 9 record types (`A`, `AAAA`, `CNAME`, `TXT`, `MX`, `NS`, `PTR`, `SRV`, `CAA`).
-- **AWS Console Fidelity**: Uses `@cloudscape-design/components` (AWS's open-source design system) for all tables, headers, navigation drawers, modals, forms, pagination, and flashbar notifications.
+- **AWS Console Fidelity**: Uses `@cloudscape-design/components` (AWS's open-source design system) for all tables, headers, navigation drawers, modals, forms, pagination, and notifications.
 - **Multi-Tenant Security**: Enforces strict user isolation on the backend. Users can only view and manage their own resources.
 
 ---
@@ -48,8 +52,8 @@ Amazon Route 53 is AWS's highly available and scalable cloud Domain Name System 
 
 | Feature | Status | Implementation Details |
 |---|---|---|
-| **Mock Authentication** | Complete | Email/password login with JWT signed tokens |
-| **HttpOnly Cookie Session** | Complete | Cookie `route53_session` (`SameSite=Lax`, `HttpOnly=true`) |
+| **Mock Authentication** | Complete | Mocked JWT authentication initialized via environment Root User credentials |
+| **Dual Auth Mode** | Complete | Supports `Authorization: Bearer <token>` header & `route53_session` HttpOnly cookie |
 | **User Data Isolation** | Complete | Backend `user_id` ownership validation on all endpoints |
 | **Hosted Zone CRUD** | Complete | Create, Read, Update, Delete Public/Private Hosted Zones |
 | **Debounced Search** | Complete | ~300ms server-side debounced search with request cancellation |
@@ -58,7 +62,7 @@ Amazon Route 53 is AWS's highly available and scalable cloud Domain Name System 
 | **DNS Type Filtering** | Complete | Combined server-side substring search & record type filtering |
 | **Cascade Deletion** | Complete | Deleting a Hosted Zone automatically deletes all child DNS records |
 | **Cloudscape Console UI** | Complete | Built exclusively with `@cloudscape-design/*` components |
-| **Responsive Design** | Complete | Adapts across Desktop, Tablet, and Mobile viewports |
+| **Responsive Design** | Complete | Adapts across Desktop, Laptop, Tablet, and Mobile viewports |
 | **User-Friendly Error Handling** | Complete | Intercepts Pydantic arrays & maps field errors to `FormField` |
 | **Environment Configuration** | Complete | Environment-driven config via `app/config.py` with `.env` support |
 | **Root User Initialization** | Complete | Idempotent startup creation of root user from environment settings |
@@ -225,6 +229,15 @@ The application uses a centralized error translation engine ([lib/errors.ts](fil
 - **FormField Integration**: Field-level errors (e.g., `"Enter a valid IPv6 address."` for AAAA `-1`) are attached directly to Cloudscape `FormField` `errorText` props.
 - **Alert Headers**: Modal error banners display clean title headers (e.g., `"Couldn't create record"`, `"A hosted zone with this name already exists."`).
 - **Connection Failures**: Network errors display `"Couldn't connect to the server. Check your connection and try again."`
+
+---
+
+## 📌 Assumptions & Limitations
+
+- **Mocked JWT Authentication**: Uses mocked JWT authentication signed by a backend secret key (`JWT_SECRET_KEY`). Root User credentials (`ROOT_USER_EMAIL`, `ROOT_USER_PASSWORD`, `ROOT_USER_NAME`) are configured via environment variables and initialized idempotently on backend startup.
+- **Dual Authentication Mechanism**: Supports both `Authorization: Bearer <token>` HTTP headers (enabling cross-site production deployments) and `route53_session` HttpOnly cookies (for same-site local development).
+- **SQLite Database Persistence**: Database persistence is guaranteed in local development (`backend/route53.db`). The cloud demo hosted on Render free tier uses ephemeral SQLite storage, resetting on service restarts (where Root User credentials are auto-initialized).
+- **Educational Scope**: Designed as an educational/portfolio clone of the AWS Route 53 console. It does not interface with live AWS APIs, register real domain names, or modify public DNS routing tables.
 
 ---
 

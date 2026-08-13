@@ -24,12 +24,10 @@ export function parseApiError(
   context: "record" | "zone" | "auth" | "general" = "general",
   action: "create" | "update" | "delete" | "load" = "create"
 ): ParsedApiError {
-  // Development error logging
   if (process.env.NODE_ENV !== "production") {
     console.error(`[API Error Captured - Context: ${context}, Action: ${action}]:`, error);
   }
 
-  // Handle Network / Connection failures
   if (
     error instanceof TypeError ||
     (error instanceof Error &&
@@ -59,7 +57,6 @@ export function parseApiError(
     rawDetail = error;
   }
 
-  // Handle specific HTTP Status Codes
   if (status === 401) {
     // Distinguish login credential failure from expired session
     if (

@@ -3,7 +3,7 @@ import { ApiError } from "./errors";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Token storage helpers (localStorage for cross-site Bearer auth)
+// Local token storage helpers
 const TOKEN_KEY = "route53_access_token";
 
 export function getStoredToken(): string | null {
@@ -99,8 +99,7 @@ export interface DNSRecordUpdateInput {
   value?: string;
 }
 
-// Retry delays for handling Render free-tier cold starts (~50s wake time).
-// Network errors (TypeError / Failed to fetch) are retried; HTTP errors are not.
+// Retry delays for server cold starts (network-level errors only)
 const MAX_RETRIES = 2;
 const RETRY_DELAYS_MS = [3000, 6000];
 
@@ -130,7 +129,6 @@ export async function apiFetch<T>(
     defaultHeaders["Content-Type"] = "application/json";
   }
 
-  // Attach Bearer token if available (cross-site production auth)
   const token = getStoredToken();
   if (token) {
     defaultHeaders["Authorization"] = `Bearer ${token}`;
@@ -142,7 +140,7 @@ export async function apiFetch<T>(
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: "include", // Also sends HttpOnly cookies as fallback for same-site local dev
+    credentials: "include",
   };
 
   let lastError: unknown;
@@ -172,13 +170,10 @@ export async function apiFetch<T>(
     } catch (error) {
       lastError = error;
 
-      // Only retry on network-level failures (cold start / server waking up).
-      // Do not retry HTTP errors (4xx / 5xx) — those are real responses.
       if (error instanceof ApiError || !isNetworkError(error)) {
         throw error;
       }
 
-      // If the request was explicitly aborted, do not retry.
       if (options.signal?.aborted) {
         throw error;
       }
@@ -191,17 +186,14 @@ export async function apiFetch<T>(
     }
   }
 
-  // All retries exhausted — throw the last network error.
   throw lastError;
 }
 
-// Authentication API methods
 export async function loginApi(email: string, password: string): Promise<LoginResponse> {
   const response = await apiFetch<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  // Store token for Bearer header auth (bypasses third-party cookie blocking)
   if (response.access_token) {
     storeToken(response.access_token);
   }

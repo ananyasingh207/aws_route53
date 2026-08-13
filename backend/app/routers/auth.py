@@ -29,7 +29,7 @@ async def login(
 
     token = create_access_token(user.id)
 
-    # Set HttpOnly cookie for session persistence (supports production cross-site HTTPS SameSite=none Secure=True)
+    # Set HttpOnly session cookie
     response.set_cookie(
         key="route53_session",
         value=token,

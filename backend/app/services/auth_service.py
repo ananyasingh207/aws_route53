@@ -8,7 +8,6 @@ from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
 from app.models import User
 
-# Configure PasswordHash supporting Argon2 and Bcrypt
 password_hash = PasswordHash(hashers=[Argon2Hasher(), BcryptHasher()])
 
 from app.config import (
@@ -22,12 +21,10 @@ from app.config import (
 
 
 def hash_password(password: str) -> str:
-    """Hashes a plaintext password."""
     return password_hash.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies a plaintext password against a stored hash."""
     try:
         return password_hash.verify(plain_password, hashed_password)
     except Exception:
@@ -35,7 +32,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(user_id: int) -> str:
-    """Generates a signed JWT access token for a given user_id."""
     expire = int(time.time()) + (ACCESS_TOKEN_EXPIRE_MINUTES * 60)
     payload = {
         "sub": str(user_id),
@@ -45,7 +41,6 @@ def create_access_token(user_id: int) -> str:
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """Decodes and validates a JWT access token. Returns payload dict or None."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
@@ -70,6 +65,5 @@ def init_root_user(db: Session) -> None:
         db.refresh(root_user)
 
 
-# Backward compatibility alias
 init_dev_user = init_root_user
 
