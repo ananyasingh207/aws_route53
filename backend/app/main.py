@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, SessionLocal, Base
 import app.models  # Ensures models are registered before metadata creation
 from app.services.auth_service import init_dev_user
-from app.routers import health, auth, hosted_zones
+from app.routers import health, auth, hosted_zones, records
 
 
 @asynccontextmanager
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AWS Route53 Clone API",
     description="Backend REST API for AWS Route53 Clone",
-    version="0.5.0",
+    version="0.6.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -47,3 +47,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(hosted_zones.router)
+app.include_router(records.router)
