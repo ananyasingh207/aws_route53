@@ -3,6 +3,24 @@ import { ApiError } from "./errors";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Token storage helpers (localStorage for cross-site Bearer auth)
+const TOKEN_KEY = "route53_access_token";
+
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function storeToken(token: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+}
+
 export interface UserResponse {
   id: number;
   name: string;
@@ -13,6 +31,8 @@ export interface UserResponse {
 export interface LoginResponse {
   message: string;
   user: UserResponse;
+  access_token: string;
+  token_type: string;
 }
 
 export interface HostedZone {
@@ -110,13 +130,19 @@ export async function apiFetch<T>(
     defaultHeaders["Content-Type"] = "application/json";
   }
 
+  // Attach Bearer token if available (cross-site production auth)
+  const token = getStoredToken();
+  if (token) {
+    defaultHeaders["Authorization"] = `Bearer ${token}`;
+  }
+
   const mergedOptions: RequestInit = {
     ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: "include", // Ensures HttpOnly cookies (route53_session) are sent/stored automatically by browser
+    credentials: "include", // Also sends HttpOnly cookies as fallback for same-site local dev
   };
 
   let lastError: unknown;
@@ -171,10 +197,15 @@ export async function apiFetch<T>(
 
 // Authentication API methods
 export async function loginApi(email: string, password: string): Promise<LoginResponse> {
-  return apiFetch<LoginResponse>("/api/auth/login", {
+  const response = await apiFetch<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  // Store token for Bearer header auth (bypasses third-party cookie blocking)
+  if (response.access_token) {
+    storeToken(response.access_token);
+  }
+  return response;
 }
 
 export async function getMeApi(): Promise<UserResponse> {
@@ -184,9 +215,11 @@ export async function getMeApi(): Promise<UserResponse> {
 }
 
 export async function logoutApi(): Promise<{ message: string }> {
-  return apiFetch<{ message: string }>("/api/auth/logout", {
+  const response = await apiFetch<{ message: string }>("/api/auth/logout", {
     method: "POST",
   });
+  clearToken();
+  return response;
 }
 
 // Hosted Zones API methods

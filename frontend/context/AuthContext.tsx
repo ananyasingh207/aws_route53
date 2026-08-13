@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { UserResponse, getMeApi, loginApi, logoutApi } from "@/lib/api";
+import { UserResponse, getMeApi, loginApi, logoutApi, clearToken } from "@/lib/api";
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore logout API failure and clear local state anyway
     } finally {
+      clearToken();
       setUser(null);
     }
   };

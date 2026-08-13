@@ -138,6 +138,8 @@ class LoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     message: str
     user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
 
 
 # ==========================================

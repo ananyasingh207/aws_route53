@@ -43,6 +43,7 @@ async def login(
     return AuthResponse(
         message="Login successful",
         user=UserResponse.model_validate(user),
+        access_token=token,
     )
 
 
