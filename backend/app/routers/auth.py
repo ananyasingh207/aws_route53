@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    COOKIE_SAMESITE,
+    COOKIE_SECURE,
+)
 from app.dependencies import get_db, get_current_user
 from app.models import User
 from app.schemas import AuthResponse, LoginRequest, UserResponse
@@ -24,15 +29,15 @@ async def login(
 
     token = create_access_token(user.id)
 
-    # Set HttpOnly cookie for session persistence
+    # Set HttpOnly cookie for session persistence (supports production cross-site HTTPS SameSite=none Secure=True)
     response.set_cookie(
         key="route53_session",
         value=token,
         httponly=True,
-        secure=False,  # Set to False for local HTTP development
-        samesite="lax",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
         path="/",
-        max_age=1800,  # 30 minutes
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
     return AuthResponse(
@@ -53,5 +58,8 @@ async def logout(response: Response):
     response.delete_cookie(
         key="route53_session",
         path="/",
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
     )
     return {"message": "Logout successful"}

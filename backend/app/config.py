@@ -52,3 +52,20 @@ ROOT_USER_NAME = os.getenv("ROOT_USER_NAME", "Route53 Administrator")
 ROOT_USER_EMAIL = os.getenv("ROOT_USER_EMAIL", "admin@example.com")
 ROOT_USER_PASSWORD = os.getenv("ROOT_USER_PASSWORD", "password")
 
+# 6. Cookie Security Configuration
+# In cross-site production deployments (e.g. Vercel https://... -> Render https://...),
+# SameSite must be "none" and Secure must be True.
+# In local HTTP development, SameSite can be "lax" and Secure can be False.
+_has_https_origin = any(origin.startswith("https://") for origin in CORS_ORIGINS)
+
+COOKIE_SAMESITE = os.getenv(
+    "COOKIE_SAMESITE", "none" if _has_https_origin else "lax"
+).lower()
+
+_cookie_secure_env = os.getenv("COOKIE_SECURE")
+if _cookie_secure_env is not None:
+    COOKIE_SECURE = _cookie_secure_env.lower() in ("true", "1", "yes")
+else:
+    COOKIE_SECURE = True if _has_https_origin else False
+
+

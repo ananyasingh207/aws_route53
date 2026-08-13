@@ -28,6 +28,7 @@ This application reproduces the look, layout, workflow, and user experience of t
 - [User-Friendly Error Handling](#-user-friendly-error-handling)
 - [Repository Structure](#-repository-structure)
 - [Local Setup & Installation](#-local-setup--installation)
+- [Deployment & Environment Variables](#-deployment--environment-variables)
 - [Database Seeding Instructions](#-database-seeding-instructions)
 
 ---
@@ -59,6 +60,8 @@ Amazon Route 53 is AWS's highly available and scalable cloud Domain Name System 
 | **Cloudscape Console UI** | Complete | Built exclusively with `@cloudscape-design/*` components |
 | **Responsive Design** | Complete | Adapts across Desktop, Tablet, and Mobile viewports |
 | **User-Friendly Error Handling** | Complete | Intercepts Pydantic arrays & maps field errors to `FormField` |
+| **Environment Configuration** | Complete | Environment-driven config via `app/config.py` with `.env` support |
+| **Root User Initialization** | Complete | Idempotent startup creation of root user from environment settings |
 
 ---
 
@@ -114,7 +117,7 @@ sequenceDiagram
 - **Cookie-Based Sessions**: Signed JWT access tokens are set strictly in HttpOnly cookies (`route53_session`, `SameSite=Lax`).
 - **Zero Token Exposure**: Tokens are never stored in or accessible to JavaScript (`localStorage`, `sessionStorage`, cookies, or global variables).
 - **Multi-Tenant Isolation**: Every API endpoint verifies resource ownership on the backend. Attempting to query or modify another user's Hosted Zone or DNS Record returns `404 Not Found` or `403 Forbidden`.
-- **CORS Protection**: Configured strictly with explicit origin matching (`CORS_ORIGINS="http://localhost:3000"`, `allow_credentials=True`).
+- **CORS Protection**: Configured strictly with explicit origin matching (`CORS_ORIGINS`, `allow_credentials=True`).
 - **XSS Prevention**: React and Cloudscape automatically escape user input strings (`<script>`, `<img src=x onerror=...>`). No `dangerouslySetInnerHTML` is used.
 - **SQL Injection Prevention**: All queries use SQLAlchemy 2.x ORM parameterized statements (`HostedZone.name.ilike(...)`).
 
@@ -240,13 +243,15 @@ aws_route53_clone/
 ├── backend/              # FastAPI Python backend application
 │   ├── app/              # Core application code
 │   │   ├── main.py       # Entry point, CORS & lifespan configuration
+│   │   ├── config.py     # Environment configuration handler & startup validator
 │   │   ├── database.py   # SQLAlchemy 2.x engine & SessionLocal
 │   │   ├── models.py     # User, HostedZone, DNSRecord DB models
 │   │   ├── schemas.py    # Pydantic v2 validation schemas
 │   │   ├── dependencies.py # Dependency injection (get_db, get_current_user)
 │   │   ├── routers/      # API routers (health.py, auth.py, hosted_zones.py, records.py)
-│   │   └── services/     # Business logic services
+│   │   └── services/     # Business logic services (auth_service.py, hosted_zone_service.py, record_service.py)
 │   ├── seed_db.py        # Database seeding script
+│   ├── .env.example      # Environment variables template
 │   ├── route53.db        # Development SQLite database
 │   └── requirements.txt  # Python dependencies
 ├── docs/                 # Documentation specs
@@ -303,6 +308,39 @@ npm run dev
 ### 3. Development Credentials
 - **Email**: `admin@example.com`
 - **Password**: `password`
+
+---
+
+## 🚀 Deployment & Environment Variables
+
+### 1. Backend Deployment (Render)
+
+Set the following environment variables in the Render Dashboard (`Environment` tab):
+
+| Variable | Recommended / Required Value | Description |
+|---|---|---|
+| `JWT_SECRET_KEY` | *(Generate a 32+ char secret string)* | **Required**. Secret key for signing JWT session cookies. Startup fails if missing! |
+| `CORS_ORIGINS` | `https://aws-route53-red.vercel.app,http://localhost:3000` | **Required**. Comma-separated list of allowed frontend origins for credentials/cookies. |
+| `ROOT_USER_EMAIL` | `admin@example.com` | Root admin email created automatically on application startup. |
+| `ROOT_USER_PASSWORD` | `your_secure_password_here` | Root admin password (hashed immediately via Argon2/Bcrypt). |
+| `ROOT_USER_NAME` | `Route53 Administrator` | Name for the initial admin account. |
+| `DATABASE_URL` | `sqlite:///./route53.db` | SQLAlchemy database URL. |
+| `JWT_ALGORITHM` | `HS256` | JWT signing algorithm. |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Session token duration in minutes. |
+| `HOST` | `0.0.0.0` | Server bind host interface. |
+| `PORT` | `8000` | Server bind port (Render sets `$PORT` automatically). |
+
+#### Render Build & Start Commands:
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+### 2. Frontend Deployment (Vercel)
+
+Set the following environment variable in the Vercel Dashboard (`Settings -> Environment Variables`):
+
+| Variable | Value | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://your-backend-service.onrender.com` | Base URL of your deployed Render backend API. |
 
 ---
 
