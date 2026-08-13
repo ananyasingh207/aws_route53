@@ -7,7 +7,14 @@ A mocked AWS Route 53 console experience built with modern web technologies. Thi
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Backend**: FastAPI, Python, SQLAlchemy 2.x, Pydantic v2
 - **Database**: SQLite (`backend/route53.db`)
+- **Testing**: `pytest`, FastAPI `TestClient`, `httpx`
 - **API**: REST APIs
+
+## API Documentation & Contract
+
+- **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **OpenAPI JSON Spec**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+- **Frontend API Contract Reference**: [docs/api-contract.md](file:///c:/Users/HP/Documents/Projects/aws_route53_clone/docs/api-contract.md)
 
 ## Authentication (Mocked)
 
@@ -41,15 +48,7 @@ All Hosted Zone endpoints require authentication via the `route53_session` HttpO
 DNS Record endpoints manage records inside user-owned Hosted Zones. Every operation verifies that the parent Hosted Zone belongs to the authenticated user.
 
 ### Supported Record Types
-- **A**: IPv4 address (e.g. `192.168.1.10`)
-- **AAAA**: IPv6 address (e.g. `2001:db8::1`)
-- **CNAME**: Target domain name (e.g. `target.example.com`)
-- **TXT**: Arbitrary text string
-- **MX**: Mail exchanger in format `<priority> <hostname>` (e.g. `10 mail.example.com`)
-- **NS**: Name server domain (e.g. `ns1.example.com`)
-- **PTR**: Pointer domain (e.g. `host.example.com`)
-- **SRV**: Service location in format `<priority> <weight> <port> <target>` (e.g. `10 5 443 service.example.com`)
-- **CAA**: Certification authority authorization in format `<flags> <tag> <value>` (e.g. `0 issue letsencrypt.org`)
+`A`, `AAAA`, `CNAME`, `TXT`, `MX`, `NS`, `PTR`, `SRV`, `CAA`
 
 ### Endpoints
 - `POST /api/hosted-zones/{zone_id}/records` — Creates a new DNS Record inside the specified Hosted Zone.
@@ -76,12 +75,40 @@ route53-clone/
 │   │   ├── dependencies.py # FastAPI dependency injections (get_db, get_current_user)
 │   │   ├── routers/      # API route modules (health.py, auth.py, hosted_zones.py, records.py)
 │   │   └── services/     # Business services (auth_service.py, hosted_zone_service.py, record_service.py)
+│   ├── tests/            # Automated pytest integration suite
+│   │   ├── conftest.py   # Test DB setup & fixtures
+│   │   ├── test_health.py
+│   │   ├── test_auth.py
+│   │   ├── test_hosted_zones.py
+│   │   ├── test_records.py
+│   │   └── test_integration.py
 │   ├── route53.db        # SQLite database file
 │   ├── requirements.txt  # Python dependencies
 │   └── .env.example      # Sample environment variable settings
+├── docs/                 # Documentation & API contract specs
+│   └── api-contract.md   # Stable REST API contract reference
 ├── .gitignore            # Root Git ignore rules
 └── README.md             # Project documentation
 ```
+
+## Backend Testing Instructions
+
+Automated integration tests use an isolated, temporary SQLite test database (`test_route53.db`) so that the development database (`route53.db`) is never modified or touched.
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Run pytest suite:
+   ```bash
+   pytest -v
+   ```
+
+3. Run compilation check:
+   ```bash
+   python -m compileall app tests
+   ```
 
 ## Frontend Setup Instructions
 
@@ -139,4 +166,4 @@ route53-clone/
 
 ## Current Project Status
 
-> **Phase 6 Complete (DNS Records Backend)**: Complete REST API for DNS Records across all 9 supported record types (A, AAAA, CNAME, TXT, MX, NS, PTR, SRV, CAA) with strict type validation, re-validation on update, multi-tenant ownership enforcement, search, type filtering, pagination, and cascade deletion is fully implemented.
+> **Phase 7 Complete (Backend Integration Testing + API Contract Lock)**: Full backend test suite (`pytest -v`) covering health, auth, hosted zones, DNS records, multi-tenant isolation, cascade deletion, and database persistence is 100% passing. The REST API contract is locked in `docs/api-contract.md`.

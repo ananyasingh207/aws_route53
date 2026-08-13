@@ -20,6 +20,10 @@ ENV/
 env.bak/
 venv.bak/
 .venv/
+.pytest_cache/
+tests/
+backend/tests/
+test_route53.db
 
 # Environment variables
 .env
