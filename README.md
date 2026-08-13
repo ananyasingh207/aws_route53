@@ -4,10 +4,26 @@ A mocked AWS Route 53 console experience built with modern web technologies. Thi
 
 ## Tech Stack
 
-- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS
-- **Backend**: FastAPI, Python
-- **Database**: SQLite (planned for later phases)
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **Backend**: FastAPI, Python, SQLAlchemy 2.x, Pydantic v2
+- **Database**: SQLite (`backend/route53.db`)
 - **API**: REST APIs
+
+## Authentication (Mocked)
+
+The application uses an HttpOnly cookie-based session architecture (`route53_session`) with signed JWT tokens and password hashing (Argon2 / Bcrypt).
+
+### Local Development Credentials
+> **IMPORTANT**: These credentials are automatically initialized for local development and testing only. **Do not use in production!**
+
+- **Email**: `admin@example.com`
+- **Password**: `password`
+- **User Name**: `Route53 Administrator`
+
+### Authentication Endpoints
+- `POST /api/auth/login` — Authenticates email/password and sets `route53_session` HttpOnly cookie.
+- `GET /api/auth/me` — Protected endpoint returning the current user profile (requires `route53_session` cookie).
+- `POST /api/auth/logout` — Clears the `route53_session` cookie.
 
 ## Project Structure
 
@@ -21,8 +37,13 @@ route53-clone/
 ├── backend/              # FastAPI Python backend application
 │   ├── app/              # Core application logic
 │   │   ├── main.py       # FastAPI entry point & CORS configuration
-│   │   ├── routers/      # API route definitions
-│   │   └── services/     # Business logic services
+│   │   ├── database.py   # SQLAlchemy 2.x engine & session setup
+│   │   ├── models.py     # User, HostedZone, DNSRecord DB models
+│   │   ├── schemas.py    # Pydantic v2 schemas
+│   │   ├── dependencies.py # FastAPI dependency injections (get_db, get_current_user)
+│   │   ├── routers/      # API route modules (health.py, auth.py)
+│   │   └── services/     # Business services (auth_service.py)
+│   ├── route53.db        # SQLite database file
 │   ├── requirements.txt  # Python dependencies
 │   └── .env.example      # Sample environment variable settings
 ├── .gitignore            # Root Git ignore rules
@@ -85,4 +106,4 @@ route53-clone/
 
 ## Current Project Status
 
-> **Phase 1 Complete (Foundation Setup)**: Project structure, frontend base (Next.js + Tailwind CSS + TypeScript), and backend base (FastAPI + CORS + Health Check) are initialized. Database models, authentication, Hosted Zones CRUD, and DNS Records CRUD functionalities have **not** yet been implemented.
+> **Phase 4 Complete (Mock Authentication)**: SQLite database layer, Pydantic v2 schemas, and HttpOnly JWT authentication (login, logout, current-user profile, dev user initialization) are fully implemented. Hosted Zones CRUD and DNS Records CRUD endpoints have **not** yet been implemented.

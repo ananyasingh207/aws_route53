@@ -39,6 +39,21 @@ class UserResponse(UserBase):
 
 
 # ==========================================
+# AUTHENTICATION SCHEMAS
+# ==========================================
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr = Field(..., description="User login email")
+    password: str = Field(..., description="User login password")
+
+
+class AuthResponse(BaseModel):
+    message: str
+    user: UserResponse
+
+
+# ==========================================
 # HOSTED ZONE SCHEMAS
 # ==========================================
 
