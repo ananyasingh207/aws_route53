@@ -35,7 +35,9 @@ except ValueError:
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./route53.db")
 
 # 3. CORS Configuration
-CORS_ORIGINS_RAW = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+CORS_ORIGINS_RAW = os.getenv(
+    "CORS_ORIGINS", "http://localhost:3000,https://aws-route53-red.vercel.app"
+)
 CORS_ORIGINS = [
     origin.strip() for origin in CORS_ORIGINS_RAW.split(",") if origin.strip()
 ]
@@ -56,16 +58,16 @@ ROOT_USER_PASSWORD = os.getenv("ROOT_USER_PASSWORD", "password")
 # In cross-site production deployments (e.g. Vercel https://... -> Render https://...),
 # SameSite must be "none" and Secure must be True.
 # In local HTTP development, SameSite can be "lax" and Secure can be False.
+_is_render = "RENDER" in os.environ or "RENDER_SERVICE_ID" in os.environ
 _has_https_origin = any(origin.startswith("https://") for origin in CORS_ORIGINS)
 
-COOKIE_SAMESITE = os.getenv(
-    "COOKIE_SAMESITE", "none" if _has_https_origin else "lax"
-).lower()
+_cookie_samesite_default = "none" if (_is_render or _has_https_origin) else "lax"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", _cookie_samesite_default).lower()
 
 _cookie_secure_env = os.getenv("COOKIE_SECURE")
 if _cookie_secure_env is not None:
     COOKIE_SECURE = _cookie_secure_env.lower() in ("true", "1", "yes")
 else:
-    COOKIE_SECURE = True if _has_https_origin else False
+    COOKIE_SECURE = True if (_is_render or _has_https_origin) else False
 
 
