@@ -23,9 +23,14 @@ export default function ConsoleShell({
   const router = useRouter();
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    // Collapse navigation on narrow viewports initially (< 768px)
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setNavigationOpen(false);
+    }
   }, []);
 
   if (!mounted) {
@@ -102,8 +107,9 @@ export default function ConsoleShell({
               ]}
             />
           }
+          navigationOpen={navigationOpen}
+          onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
           content={children}
-          navigationOpen={true}
           toolsHide={true}
         />
       </div>

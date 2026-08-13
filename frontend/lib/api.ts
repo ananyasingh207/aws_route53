@@ -13,6 +13,38 @@ export interface LoginResponse {
   user: UserResponse;
 }
 
+export interface HostedZone {
+  id: number;
+  name: string;
+  zone_type: string;
+  description: string;
+  private_zone: boolean;
+  created_at: string;
+  updated_at: string;
+  user_id: number;
+}
+
+export interface HostedZoneListResponse {
+  items: HostedZone[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface HostedZoneCreateInput {
+  name: string;
+  zone_type: string;
+  description?: string;
+  private_zone: boolean;
+}
+
+export interface HostedZoneUpdateInput {
+  name?: string;
+  zone_type?: string;
+  description?: string;
+  private_zone?: boolean;
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -54,6 +86,7 @@ export async function apiFetch<T>(
   return response.json() as Promise<T>;
 }
 
+// Authentication API methods
 export async function loginApi(email: string, password: string): Promise<LoginResponse> {
   return apiFetch<LoginResponse>("/api/auth/login", {
     method: "POST",
@@ -70,5 +103,54 @@ export async function getMeApi(): Promise<UserResponse> {
 export async function logoutApi(): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/api/auth/logout", {
     method: "POST",
+  });
+}
+
+// Hosted Zones API methods
+export async function listHostedZonesApi(
+  search: string = "",
+  page: number = 1,
+  limit: number = 10,
+  signal?: AbortSignal
+): Promise<HostedZoneListResponse> {
+  const queryParams = new URLSearchParams();
+  if (search.trim()) queryParams.set("search", search.trim());
+  queryParams.set("page", page.toString());
+  queryParams.set("limit", limit.toString());
+
+  return apiFetch<HostedZoneListResponse>(`/api/hosted-zones?${queryParams.toString()}`, {
+    method: "GET",
+    signal,
+  });
+}
+
+export async function getHostedZoneApi(id: number): Promise<HostedZone> {
+  return apiFetch<HostedZone>(`/api/hosted-zones/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function createHostedZoneApi(
+  input: HostedZoneCreateInput
+): Promise<HostedZone> {
+  return apiFetch<HostedZone>("/api/hosted-zones", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateHostedZoneApi(
+  id: number,
+  input: HostedZoneUpdateInput
+): Promise<HostedZone> {
+  return apiFetch<HostedZone>(`/api/hosted-zones/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteHostedZoneApi(id: number): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/api/hosted-zones/${id}`, {
+    method: "DELETE",
   });
 }

@@ -33,11 +33,19 @@ The application uses an HttpOnly cookie-based session architecture (`route53_ses
 - `POST /api/auth/logout` — Clears the `route53_session` HttpOnly cookie.
 - **Login UI Route**: [http://localhost:3000/login](http://localhost:3000/login)
 
-## Hosted Zones API
+## Hosted Zones API & Console Integration
 
 All Hosted Zone endpoints require authentication via the `route53_session` HttpOnly cookie and enforce strict user data isolation.
 
-### Endpoints
+### Console Features ([http://localhost:3000/hosted-zones](http://localhost:3000/hosted-zones))
+- **Live Data Listing**: Real-time table powered by `GET /api/hosted-zones`.
+- **Debounced Search**: ~300ms debounced server-side search input.
+- **Server Pagination**: Collection preferences supporting page sizes 10, 20, 50, and 100.
+- **Create Hosted Zone**: Modal form supporting domain name, description, and Public/Private zone type. Displays `409 Conflict` alert on duplicate names.
+- **Edit Hosted Zone**: Modal form prefilled with zone data updating backend via `PUT /api/hosted-zones/{id}`.
+- **Delete Hosted Zone**: Modal confirmation explicitly warning: *"Deleting a hosted zone also deletes all of its associated DNS records."*
+
+### Backend Endpoints
 - `POST /api/hosted-zones` — Creates a new Hosted Zone owned by the authenticated user.
 - `GET /api/hosted-zones` — Lists, searches, and paginates Hosted Zones belonging to the user.
 - `GET /api/hosted-zones/{id}` — Retrieves details of a specific Hosted Zone (`404 Not Found` if not owned).
@@ -63,7 +71,7 @@ DNS Record endpoints manage records inside user-owned Hosted Zones. Every operat
 ```
 route53-clone/
 ├── frontend/             # Next.js TypeScript web application (Cloudscape Design System)
-│   ├── app/              # Next.js App Router pages and layout (/login, /dashboard, /hosted-zones)
+│   ├── app/              # Next.js App Router pages (/login, /dashboard, /hosted-zones)
 │   ├── components/       # App shell & route protection (ConsoleShell.tsx, ProtectedRoute.tsx)
 │   ├── context/          # React Auth Context (AuthContext.tsx)
 │   ├── lib/              # API fetch helper (api.ts)
@@ -150,11 +158,10 @@ Automated integration tests use an isolated, temporary SQLite test database (`te
 ## Local URLs
 
 - **Frontend Application**: [http://localhost:3000](http://localhost:3000)
-- **Frontend Login Page**: [http://localhost:3000/login](http://localhost:3000/login)
+- **Frontend Hosted Zones**: [http://localhost:3000/hosted-zones](http://localhost:3000/hosted-zones)
 - **Backend Base API**: [http://localhost:8000](http://localhost:8000)
-- **Backend Health Check**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 - **API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Current Project Status
 
-> **Phase 9 Complete (Authentication UI + Session Integration)**: Complete Cloudscape-based login page (`/login`), React Auth Context (`AuthContext.tsx`), API client with `credentials: "include"`, ProtectedRoute guard, TopNavigation user profile integration, and Sign Out workflow are fully implemented and verified.
+> **Phase 10 Complete (Hosted Zones UI + API Integration)**: Full Cloudscape Hosted Zones console (`/hosted-zones`) connected to FastAPI backend REST API (`/api/hosted-zones`). Supports real data listing, debounced search, server pagination, collection preferences, Create, Edit, Delete modals (with DNS record cascade warning), Flashbar notifications, and error alerts.
