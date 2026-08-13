@@ -3,7 +3,7 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./route53.db")
+from app.config import DATABASE_URL
 
 # connect_args={"check_same_thread": False} is required for SQLite in FastAPI
 engine = create_engine(

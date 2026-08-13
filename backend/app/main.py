@@ -9,7 +9,7 @@ load_dotenv()
 
 from app.database import engine, SessionLocal, Base
 import app.models  # Ensures models are registered before metadata creation
-from app.services.auth_service import init_dev_user
+from app.services.auth_service import init_root_user
 from app.routers import health, auth, hosted_zones, records
 
 
@@ -18,10 +18,10 @@ async def lifespan(app: FastAPI):
     # Initialize SQLite database tables on application startup
     Base.metadata.create_all(bind=engine)
 
-    # Initialize default development user if not already present
+    # Initialize root user from environment configuration if not present
     db = SessionLocal()
     try:
-        init_dev_user(db)
+        init_root_user(db)
     finally:
         db.close()
 
@@ -37,18 +37,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration reading CORS_ORIGINS from environment (supports comma-separated origins)
-cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
-
-origins = [
-    origin.strip()
-    for origin in cors_origins_raw.split(",")
-    if origin.strip()
-]
+from app.config import CORS_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

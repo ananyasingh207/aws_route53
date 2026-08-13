@@ -11,9 +11,14 @@ from app.models import User
 # Configure PasswordHash supporting Argon2 and Bcrypt
 password_hash = PasswordHash(hashers=[Argon2Hasher(), BcryptHasher()])
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-this-development-secret-key-32chars")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+from app.config import (
+    JWT_SECRET_KEY as SECRET_KEY,
+    JWT_ALGORITHM as ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ROOT_USER_NAME,
+    ROOT_USER_EMAIL,
+    ROOT_USER_PASSWORD,
+)
 
 
 def hash_password(password: str) -> str:
@@ -48,16 +53,23 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
-def init_dev_user(db: Session) -> None:
-    """Creates default development user (admin@example.com) if no user exists."""
-    dev_email = "admin@example.com"
-    existing_user = db.query(User).filter(User.email == dev_email).first()
+def init_root_user(db: Session) -> None:
+    """Idempotently creates root user from environment configuration if not already existing."""
+    if not ROOT_USER_EMAIL or not ROOT_USER_PASSWORD:
+        return
+
+    existing_user = db.query(User).filter(User.email == ROOT_USER_EMAIL).first()
     if not existing_user:
-        dev_user = User(
-            name="Route53 Administrator",
-            email=dev_email,
-            password=hash_password("password"),
+        root_user = User(
+            name=ROOT_USER_NAME or "Route53 Administrator",
+            email=ROOT_USER_EMAIL,
+            password=hash_password(ROOT_USER_PASSWORD),
         )
-        db.add(dev_user)
+        db.add(root_user)
         db.commit()
-        db.refresh(dev_user)
+        db.refresh(root_user)
+
+
+# Backward compatibility alias
+init_dev_user = init_root_user
+
