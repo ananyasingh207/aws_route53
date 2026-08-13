@@ -19,6 +19,7 @@ import FormField from "@cloudscape-design/components/form-field";
 import Input from "@cloudscape-design/components/input";
 import Textarea from "@cloudscape-design/components/textarea";
 import RadioGroup from "@cloudscape-design/components/radio-group";
+import Link from "@cloudscape-design/components/link";
 
 import {
   HostedZone,
@@ -27,38 +28,43 @@ import {
   listHostedZonesApi,
   updateHostedZoneApi,
 } from "@/lib/api";
+import { parseApiError } from "@/lib/errors";
 
 export default function HostedZonesPage() {
-  const [items, setItems] = useState<HostedZone[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [hostedZones, setHostedZones] = useState<HostedZone[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedItems, setSelectedItems] = useState<HostedZone[]>([]);
   const [flashMessages, setFlashMessages] = useState<FlashbarProps.MessageDefinition[]>([]);
 
+  // Search & Pagination state
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createName, setCreateName] = useState("");
+  const [createType, setCreateType] = useState("Public");
   const [createDescription, setCreateDescription] = useState("");
-  const [createZoneType, setCreateZoneType] = useState<"Public" | "Private">("Public");
   const [createError, setCreateError] = useState("");
+  const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("Public");
   const [editDescription, setEditDescription] = useState("");
-  const [editZoneType, setEditZoneType] = useState<"Public" | "Private">("Public");
   const [editError, setEditError] = useState("");
+  const [editFieldErrors, setEditFieldErrors] = useState<Record<string, string>>({});
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
-  // Debounce search input (~300ms) and reset page to 1
+  // Debounce search input (~300ms)
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
@@ -67,17 +73,17 @@ export default function HostedZonesPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Fetch hosted zones from backend API
+  // Fetch hosted zones from API
   const fetchHostedZones = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const res = await listHostedZonesApi(debouncedSearch, page, limit);
-      setItems(res.items);
-      setTotal(res.total);
+      setHostedZones(res.items);
+      setTotalItems(res.total);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "Unable to load hosted zones. Please try again.");
+      const parsed = parseApiError(err, "zone", "load");
+      setError(parsed.message);
     } finally {
       setLoading(false);
     }
@@ -87,41 +93,37 @@ export default function HostedZonesPage() {
     fetchHostedZones();
   }, [fetchHostedZones]);
 
-  // Handle open Edit Modal
-  const handleOpenEdit = () => {
-    if (selectedItems.length !== 1) return;
-    const item = selectedItems[0];
-    setEditName(item.name);
-    setEditDescription(item.description || "");
-    setEditZoneType(item.zone_type as "Public" | "Private");
-    setEditError("");
-    setEditModalOpen(true);
-  };
-
-  // Create Form Submit
+  // Create Hosted Zone submit handler
   const handleCreateSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setCreateError("");
+    setCreateFieldErrors({});
+
     if (!createName.trim()) {
-      setCreateError("Domain name is required.");
+      setCreateError("Enter a domain name.");
+      setCreateFieldErrors({ name: "Enter a domain name." });
       return;
     }
+
     setCreateSubmitting(true);
-    setCreateError("");
     try {
+      const isPrivate = createType === "Private";
       await createHostedZoneApi({
         name: createName.trim(),
+        zone_type: createType,
         description: createDescription.trim(),
-        zone_type: createZoneType,
-        private_zone: createZoneType === "Private",
+        private_zone: isPrivate,
       });
+
       setCreateModalOpen(false);
       setCreateName("");
       setCreateDescription("");
-      setCreateZoneType("Public");
+      setCreateType("Public");
+
       setFlashMessages([
         {
           type: "success",
-          content: `Hosted zone "${createName.trim()}" created successfully.`,
+          content: "Hosted zone created successfully.",
           dismissible: true,
           id: Date.now().toString(),
           onDismiss: () => setFlashMessages([]),
@@ -129,41 +131,57 @@ export default function HostedZonesPage() {
       ]);
       fetchHostedZones();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("409") || msg.toLowerCase().includes("already exists")) {
-        setCreateError("A hosted zone with this name already exists.");
-      } else {
-        setCreateError(msg || "Failed to create hosted zone.");
-      }
+      const parsed = parseApiError(err, "zone", "create");
+      setCreateError(parsed.message);
+      setCreateFieldErrors(parsed.fieldErrors);
     } finally {
       setCreateSubmitting(false);
     }
   };
 
-  // Edit Form Submit
+  // Edit Hosted Zone modal opener
+  const handleOpenEdit = () => {
+    if (selectedItems.length !== 1) return;
+    const target = selectedItems[0];
+    setEditName(target.name);
+    setEditType(target.zone_type);
+    setEditDescription(target.description || "");
+    setEditError("");
+    setEditFieldErrors({});
+    setEditModalOpen(true);
+  };
+
+  // Edit Hosted Zone submit handler
   const handleEditSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (selectedItems.length !== 1) return;
     const target = selectedItems[0];
+    setEditError("");
+    setEditFieldErrors({});
+
     if (!editName.trim()) {
-      setEditError("Domain name is required.");
+      setEditError("Enter a domain name.");
+      setEditFieldErrors({ name: "Enter a domain name." });
       return;
     }
+
     setEditSubmitting(true);
-    setEditError("");
     try {
+      const isPrivate = editType === "Private";
       await updateHostedZoneApi(target.id, {
         name: editName.trim(),
+        zone_type: editType,
         description: editDescription.trim(),
-        zone_type: editZoneType,
-        private_zone: editZoneType === "Private",
+        private_zone: isPrivate,
       });
+
       setEditModalOpen(false);
       setSelectedItems([]);
+
       setFlashMessages([
         {
           type: "success",
-          content: `Hosted zone "${editName.trim()}" updated successfully.`,
+          content: "Hosted zone updated successfully.",
           dismissible: true,
           id: Date.now().toString(),
           onDismiss: () => setFlashMessages([]),
@@ -171,30 +189,29 @@ export default function HostedZonesPage() {
       ]);
       fetchHostedZones();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("409") || msg.toLowerCase().includes("already exists")) {
-        setEditError("Another hosted zone with this name already exists.");
-      } else {
-        setEditError(msg || "Failed to update hosted zone.");
-      }
+      const parsed = parseApiError(err, "zone", "update");
+      setEditError(parsed.message);
+      setEditFieldErrors(parsed.fieldErrors);
     } finally {
       setEditSubmitting(false);
     }
   };
 
-  // Delete Form Submit
+  // Delete Hosted Zone submit handler
   const handleDeleteSubmit = async () => {
     if (selectedItems.length !== 1) return;
     const target = selectedItems[0];
     setDeleteSubmitting(true);
     try {
       await deleteHostedZoneApi(target.id);
+
       setDeleteModalOpen(false);
       setSelectedItems([]);
+
       setFlashMessages([
         {
           type: "success",
-          content: `Hosted zone "${target.name}" deleted successfully.`,
+          content: "Hosted zone deleted successfully.",
           dismissible: true,
           id: Date.now().toString(),
           onDismiss: () => setFlashMessages([]),
@@ -202,24 +219,24 @@ export default function HostedZonesPage() {
       ]);
       fetchHostedZones();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const parsed = parseApiError(err, "zone", "delete");
+      setDeleteModalOpen(false);
       setFlashMessages([
         {
           type: "error",
-          content: msg || "Failed to delete hosted zone.",
+          content: parsed.message,
           dismissible: true,
           id: Date.now().toString(),
           onDismiss: () => setFlashMessages([]),
         },
       ]);
-      setDeleteModalOpen(false);
     } finally {
       setDeleteSubmitting(false);
     }
   };
 
-  const pagesCount = Math.ceil(total / limit) || 1;
-  const isOneItemSelected = selectedItems.length === 1;
+  const pagesCount = Math.ceil(totalItems / limit) || 1;
+  const isOneSelected = selectedItems.length === 1;
 
   return (
     <ConsoleShell
@@ -233,42 +250,24 @@ export default function HostedZonesPage() {
         header={
           <Header
             variant="h1"
-            description="A hosted zone is a container for DNS records for a domain."
+            description="A hosted zone tells Route 53 how to respond to DNS queries for a domain."
             actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button
-                  iconName="refresh"
-                  ariaLabel="Refresh hosted zones"
-                  onClick={fetchHostedZones}
-                  loading={loading}
-                >
-                  Refresh
-                </Button>
-                <Button disabled={!isOneItemSelected} onClick={handleOpenEdit}>
-                  Edit
-                </Button>
-                <Button
-                  disabled={!isOneItemSelected}
-                  onClick={() => setDeleteModalOpen(true)}
-                >
-                  Delete
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    setCreateName("");
-                    setCreateDescription("");
-                    setCreateZoneType("Public");
-                    setCreateError("");
-                    setCreateModalOpen(true);
-                  }}
-                >
-                  Create hosted zone
-                </Button>
-              </SpaceBetween>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setCreateName("");
+                  setCreateDescription("");
+                  setCreateType("Public");
+                  setCreateError("");
+                  setCreateFieldErrors({});
+                  setCreateModalOpen(true);
+                }}
+              >
+                Create hosted zone
+              </Button>
             }
           >
-            Hosted zones
+            Hosted zones ({totalItems})
           </Header>
         }
       >
@@ -283,7 +282,7 @@ export default function HostedZonesPage() {
                   Retry
                 </Button>
               }
-              header="Unable to load hosted zones"
+              header="Couldn't load hosted zones"
             >
               {error}
             </Alert>
@@ -295,7 +294,9 @@ export default function HostedZonesPage() {
               {
                 id: "name",
                 header: "Domain name",
-                cell: (item) => item.name,
+                cell: (item) => (
+                  <Link href={`/hosted-zones/${item.id}`}>{item.name}</Link>
+                ),
                 sortingField: "name",
               },
               {
@@ -323,7 +324,7 @@ export default function HostedZonesPage() {
                     : "-",
               },
             ]}
-            items={items}
+            items={hostedZones}
             loading={loading}
             loadingText="Loading hosted zones..."
             selectionType="single"
@@ -332,8 +333,40 @@ export default function HostedZonesPage() {
               setSelectedItems(detail.selectedItems as HostedZone[])
             }
             trackBy="id"
+            header={
+              <Header
+                variant="h2"
+                actions={
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <Button
+                      iconName="refresh"
+                      ariaLabel="Refresh"
+                      onClick={fetchHostedZones}
+                      loading={loading}
+                    >
+                      Refresh
+                    </Button>
+                    <Button disabled={!isOneSelected} onClick={handleOpenEdit}>
+                      Edit
+                    </Button>
+                    <Button
+                      disabled={!isOneSelected}
+                      onClick={() => setDeleteModalOpen(true)}
+                    >
+                      Delete
+                    </Button>
+                  </SpaceBetween>
+                }
+              >
+                Hosted zones list
+              </Header>
+            }
             empty={
-              <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
+              <Box
+                margin={{ vertical: "xs" }}
+                textAlign="center"
+                color="inherit"
+              >
                 <SpaceBetween size="m">
                   <b>No hosted zones</b>
                   <Box variant="p" color="inherit">
@@ -344,8 +377,9 @@ export default function HostedZonesPage() {
                     onClick={() => {
                       setCreateName("");
                       setCreateDescription("");
-                      setCreateZoneType("Public");
+                      setCreateType("Public");
                       setCreateError("");
+                      setCreateFieldErrors({});
                       setCreateModalOpen(true);
                     }}
                   >
@@ -428,15 +462,15 @@ export default function HostedZonesPage() {
           >
             <SpaceBetween size="m">
               {createError && (
-                <Alert type="error" header="Creation failed">
+                <Alert type="error" header="Couldn't create hosted zone">
                   {createError}
                 </Alert>
               )}
 
               <FormField
                 label="Domain name"
-                description="Specify the name of the domain that you want to route traffic for."
-                errorText={!createName.trim() && createError ? "Domain name is required." : undefined}
+                description="Specify the domain name that you want to route traffic for."
+                errorText={createFieldErrors.name}
               >
                 <Input
                   value={createName}
@@ -446,38 +480,34 @@ export default function HostedZonesPage() {
                 />
               </FormField>
 
-              <FormField
-                label="Description - optional"
-                description="Enter a comment or description for this hosted zone."
-              >
-                <Textarea
-                  value={createDescription}
-                  onChange={({ detail }) => setCreateDescription(detail.value)}
-                  placeholder="Primary public hosted zone"
-                  disabled={createSubmitting}
-                />
-              </FormField>
-
-              <FormField label="Type" description="Choose the type of hosted zone.">
+              <FormField label="Zone type" description="Choose the type of hosted zone.">
                 <RadioGroup
-                  value={createZoneType}
-                  onChange={({ detail }) =>
-                    setCreateZoneType(detail.value as "Public" | "Private")
-                  }
+                  value={createType}
+                  onChange={({ detail }) => setCreateType(detail.value)}
                   items={[
                     {
                       value: "Public",
                       label: "Public hosted zone",
-                      description:
-                        "Routes traffic on the internet for your domain.",
+                      description: "Routes traffic on the internet.",
                     },
                     {
                       value: "Private",
                       label: "Private hosted zone",
-                      description:
-                        "Routes traffic within an Amazon VPC.",
+                      description: "Routes traffic within Amazon VPCs.",
                     },
                   ]}
+                />
+              </FormField>
+
+              <FormField
+                label="Description"
+                description="Optional description for this hosted zone."
+              >
+                <Textarea
+                  value={createDescription}
+                  onChange={({ detail }) => setCreateDescription(detail.value)}
+                  placeholder="Production web server domain"
+                  disabled={createSubmitting}
                 />
               </FormField>
             </SpaceBetween>
@@ -516,12 +546,12 @@ export default function HostedZonesPage() {
           >
             <SpaceBetween size="m">
               {editError && (
-                <Alert type="error" header="Update failed">
+                <Alert type="error" header="Couldn't update hosted zone">
                   {editError}
                 </Alert>
               )}
 
-              <FormField label="Domain name">
+              <FormField label="Domain name" errorText={editFieldErrors.name}>
                 <Input
                   value={editName}
                   onChange={({ detail }) => setEditName(detail.value)}
@@ -529,24 +559,22 @@ export default function HostedZonesPage() {
                 />
               </FormField>
 
-              <FormField label="Description - optional">
-                <Textarea
-                  value={editDescription}
-                  onChange={({ detail }) => setEditDescription(detail.value)}
-                  disabled={editSubmitting}
-                />
-              </FormField>
-
-              <FormField label="Type">
+              <FormField label="Zone type">
                 <RadioGroup
-                  value={editZoneType}
-                  onChange={({ detail }) =>
-                    setEditZoneType(detail.value as "Public" | "Private")
-                  }
+                  value={editType}
+                  onChange={({ detail }) => setEditType(detail.value)}
                   items={[
                     { value: "Public", label: "Public hosted zone" },
                     { value: "Private", label: "Private hosted zone" },
                   ]}
+                />
+              </FormField>
+
+              <FormField label="Description">
+                <Textarea
+                  value={editDescription}
+                  onChange={({ detail }) => setEditDescription(detail.value)}
+                  disabled={editSubmitting}
                 />
               </FormField>
             </SpaceBetween>
@@ -562,13 +590,12 @@ export default function HostedZonesPage() {
         closeAriaLabel="Close modal"
       >
         <SpaceBetween size="m">
-          <Alert type="warning" header="Cascade Deletion Warning">
+          <Alert type="warning">
             Deleting a hosted zone also deletes all of its associated DNS records. This action cannot be undone.
           </Alert>
 
           <Box variant="p">
-            Are you sure you want to delete the hosted zone{" "}
-            <b>{selectedItems[0]?.name}</b>?
+            Are you sure you want to delete the hosted zone <b>{selectedItems[0]?.name}</b>?
           </Box>
 
           <SpaceBetween direction="horizontal" size="xs">

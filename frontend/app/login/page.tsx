@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { parseApiError } from "@/lib/errors";
 
 import Form from "@cloudscape-design/components/form";
 import FormField from "@cloudscape-design/components/form-field";
@@ -74,12 +75,8 @@ export default function LoginPage() {
       await login(email.trim(), password);
       router.push("/dashboard");
     } catch (err: unknown) {
-      const errorStr = err instanceof Error ? err.message : String(err);
-      if (errorStr.includes("401") || errorStr.toLowerCase().includes("invalid")) {
-        setErrorMessage("Incorrect email or password.");
-      } else {
-        setErrorMessage("Unable to sign in. Please try again.");
-      }
+      const parsed = parseApiError(err, "auth");
+      setErrorMessage(parsed.message);
     } finally {
       setIsSubmitting(false);
     }

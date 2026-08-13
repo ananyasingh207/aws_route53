@@ -1,3 +1,5 @@
+import { ApiError } from "./errors";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -45,6 +47,38 @@ export interface HostedZoneUpdateInput {
   private_zone?: boolean;
 }
 
+export interface DNSRecord {
+  id: number;
+  hosted_zone_id: number;
+  name: string;
+  type: string;
+  ttl: number;
+  value: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DNSRecordListResponse {
+  items: DNSRecord[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface DNSRecordCreateInput {
+  name: string;
+  type: string;
+  ttl: number;
+  value: string;
+}
+
+export interface DNSRecordUpdateInput {
+  name?: string;
+  type?: string;
+  ttl?: number;
+  value?: string;
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -70,17 +104,18 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     let errorDetail = `Request failed with status ${response.status}`;
+    let rawJson: any = null;
     try {
-      const errorJson = await response.json();
-      if (errorJson && errorJson.detail) {
-        errorDetail = typeof errorJson.detail === "string" 
-          ? errorJson.detail 
-          : JSON.stringify(errorJson.detail);
+      rawJson = await response.json();
+      if (rawJson && rawJson.detail) {
+        errorDetail = typeof rawJson.detail === "string" 
+          ? rawJson.detail 
+          : JSON.stringify(rawJson.detail);
       }
     } catch {
       // Ignore JSON parse errors for non-JSON error responses
     }
-    throw new Error(errorDetail);
+    throw new ApiError(response.status, errorDetail, rawJson);
   }
 
   return response.json() as Promise<T>;
@@ -151,6 +186,62 @@ export async function updateHostedZoneApi(
 
 export async function deleteHostedZoneApi(id: number): Promise<{ message: string }> {
   return apiFetch<{ message: string }>(`/api/hosted-zones/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// DNS Records API methods
+export async function listDNSRecordsApi(
+  zoneId: number,
+  search: string = "",
+  typeFilter: string = "",
+  page: number = 1,
+  limit: number = 10,
+  signal?: AbortSignal
+): Promise<DNSRecordListResponse> {
+  const queryParams = new URLSearchParams();
+  if (search.trim()) queryParams.set("search", search.trim());
+  if (typeFilter.trim()) queryParams.set("type", typeFilter.trim());
+  queryParams.set("page", page.toString());
+  queryParams.set("limit", limit.toString());
+
+  return apiFetch<DNSRecordListResponse>(
+    `/api/hosted-zones/${zoneId}/records?${queryParams.toString()}`,
+    {
+      method: "GET",
+      signal,
+    }
+  );
+}
+
+export async function getDNSRecordApi(id: number): Promise<DNSRecord> {
+  return apiFetch<DNSRecord>(`/api/records/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function createDNSRecordApi(
+  zoneId: number,
+  input: DNSRecordCreateInput
+): Promise<DNSRecord> {
+  return apiFetch<DNSRecord>(`/api/hosted-zones/${zoneId}/records`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateDNSRecordApi(
+  id: number,
+  input: DNSRecordUpdateInput
+): Promise<DNSRecord> {
+  return apiFetch<DNSRecord>(`/api/records/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteDNSRecordApi(id: number): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/api/records/${id}`, {
     method: "DELETE",
   });
 }
