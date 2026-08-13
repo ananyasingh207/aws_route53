@@ -2,6 +2,11 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
+
 from app.database import engine, SessionLocal, Base
 import app.models  # Ensures models are registered before metadata creation
 from app.services.auth_service import init_dev_user
@@ -32,8 +37,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration for local development with credentials (cookies)
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# CORS configuration reading CORS_ORIGINS from environment (supports comma-separated origins)
+cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+
+origins = [
+    origin.strip()
+    for origin in cors_origins_raw.split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
