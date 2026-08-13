@@ -4,7 +4,7 @@ A mocked AWS Route 53 console experience built with modern web technologies. Thi
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, AWS Cloudscape Design System
 - **Backend**: FastAPI, Python, SQLAlchemy 2.x, Pydantic v2
 - **Database**: SQLite (`backend/route53.db`)
 - **Testing**: `pytest`, FastAPI `TestClient`, `httpx`
@@ -16,9 +16,9 @@ A mocked AWS Route 53 console experience built with modern web technologies. Thi
 - **OpenAPI JSON Spec**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
 - **Frontend API Contract Reference**: [docs/api-contract.md](file:///c:/Users/HP/Documents/Projects/aws_route53_clone/docs/api-contract.md)
 
-## Authentication (Mocked)
+## Authentication Architecture
 
-The application uses an HttpOnly cookie-based session architecture (`route53_session`) with signed JWT tokens and password hashing (Argon2 / Bcrypt).
+The application uses an HttpOnly cookie-based session architecture (`route53_session`) with signed JWT tokens on the backend. All frontend API requests include `credentials: "include"`. Tokens are never exposed to or stored in JavaScript (`localStorage` / `sessionStorage`).
 
 ### Local Development Credentials
 > **IMPORTANT**: These credentials are automatically initialized for local development and testing only. **Do not use in production!**
@@ -27,10 +27,11 @@ The application uses an HttpOnly cookie-based session architecture (`route53_ses
 - **Password**: `password`
 - **User Name**: `Route53 Administrator`
 
-### Authentication Endpoints
+### Authentication Endpoints & Frontend Integration
 - `POST /api/auth/login` — Authenticates email/password and sets `route53_session` HttpOnly cookie.
-- `GET /api/auth/me` — Protected endpoint returning the current user profile (requires `route53_session` cookie).
-- `POST /api/auth/logout` — Clears the `route53_session` cookie.
+- `GET /api/auth/me` — Protected session verification returning the current user profile.
+- `POST /api/auth/logout` — Clears the `route53_session` HttpOnly cookie.
+- **Login UI Route**: [http://localhost:3000/login](http://localhost:3000/login)
 
 ## Hosted Zones API
 
@@ -61,10 +62,11 @@ DNS Record endpoints manage records inside user-owned Hosted Zones. Every operat
 
 ```
 route53-clone/
-├── frontend/             # Next.js TypeScript web application
-│   ├── app/              # Next.js App Router pages and layout
-│   ├── components/       # UI components
-│   ├── lib/              # Utility functions and shared helpers
+├── frontend/             # Next.js TypeScript web application (Cloudscape Design System)
+│   ├── app/              # Next.js App Router pages and layout (/login, /dashboard, /hosted-zones)
+│   ├── components/       # App shell & route protection (ConsoleShell.tsx, ProtectedRoute.tsx)
+│   ├── context/          # React Auth Context (AuthContext.tsx)
+│   ├── lib/              # API fetch helper (api.ts)
 │   └── public/           # Static assets
 ├── backend/              # FastAPI Python backend application
 │   ├── app/              # Core application logic
@@ -75,16 +77,9 @@ route53-clone/
 │   │   ├── dependencies.py # FastAPI dependency injections (get_db, get_current_user)
 │   │   ├── routers/      # API route modules (health.py, auth.py, hosted_zones.py, records.py)
 │   │   └── services/     # Business services (auth_service.py, hosted_zone_service.py, record_service.py)
-│   ├── tests/            # Automated pytest integration suite
-│   │   ├── conftest.py   # Test DB setup & fixtures
-│   │   ├── test_health.py
-│   │   ├── test_auth.py
-│   │   ├── test_hosted_zones.py
-│   │   ├── test_records.py
-│   │   └── test_integration.py
+│   ├── tests/            # Automated pytest integration suite (local-only)
 │   ├── route53.db        # SQLite database file
-│   ├── requirements.txt  # Python dependencies
-│   └── .env.example      # Sample environment variable settings
+│   └── requirements.txt  # Python dependencies
 ├── docs/                 # Documentation & API contract specs
 │   └── api-contract.md   # Stable REST API contract reference
 ├── .gitignore            # Root Git ignore rules
@@ -103,11 +98,6 @@ Automated integration tests use an isolated, temporary SQLite test database (`te
 2. Run pytest suite:
    ```bash
    pytest -v
-   ```
-
-3. Run compilation check:
-   ```bash
-   python -m compileall app tests
    ```
 
 ## Frontend Setup Instructions
@@ -160,10 +150,11 @@ Automated integration tests use an isolated, temporary SQLite test database (`te
 ## Local URLs
 
 - **Frontend Application**: [http://localhost:3000](http://localhost:3000)
+- **Frontend Login Page**: [http://localhost:3000/login](http://localhost:3000/login)
 - **Backend Base API**: [http://localhost:8000](http://localhost:8000)
 - **Backend Health Check**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 - **API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Current Project Status
 
-> **Phase 7 Complete (Backend Integration Testing + API Contract Lock)**: Full backend test suite (`pytest -v`) covering health, auth, hosted zones, DNS records, multi-tenant isolation, cascade deletion, and database persistence is 100% passing. The REST API contract is locked in `docs/api-contract.md`.
+> **Phase 9 Complete (Authentication UI + Session Integration)**: Complete Cloudscape-based login page (`/login`), React Auth Context (`AuthContext.tsx`), API client with `credentials: "include"`, ProtectedRoute guard, TopNavigation user profile integration, and Sign Out workflow are fully implemented and verified.
