@@ -79,6 +79,23 @@ export interface DNSRecordUpdateInput {
   value?: string;
 }
 
+// Retry delays for handling Render free-tier cold starts (~50s wake time).
+// Network errors (TypeError / Failed to fetch) are retried; HTTP errors are not.
+const MAX_RETRIES = 2;
+const RETRY_DELAYS_MS = [3000, 6000];
+
+function isNetworkError(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error &&
+      (error.message.includes("Failed to fetch") ||
+        error.message.includes("NetworkError") ||
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("ERR_NETWORK") ||
+        error.message.includes("Load failed")))
+  );
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -93,32 +110,63 @@ export async function apiFetch<T>(
     defaultHeaders["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(url, {
+  const mergedOptions: RequestInit = {
     ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
     credentials: "include", // Ensures HttpOnly cookies (route53_session) are sent/stored automatically by browser
-  });
+  };
 
-  if (!response.ok) {
-    let errorDetail = `Request failed with status ${response.status}`;
-    let rawJson: any = null;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      rawJson = await response.json();
-      if (rawJson && rawJson.detail) {
-        errorDetail = typeof rawJson.detail === "string" 
-          ? rawJson.detail 
-          : JSON.stringify(rawJson.detail);
+      const response = await fetch(url, mergedOptions);
+
+      if (!response.ok) {
+        let errorDetail = `Request failed with status ${response.status}`;
+        let rawJson: any = null;
+        try {
+          rawJson = await response.json();
+          if (rawJson && rawJson.detail) {
+            errorDetail =
+              typeof rawJson.detail === "string"
+                ? rawJson.detail
+                : JSON.stringify(rawJson.detail);
+          }
+        } catch {
+          // Ignore JSON parse errors for non-JSON error responses
+        }
+        throw new ApiError(response.status, errorDetail, rawJson);
       }
-    } catch {
-      // Ignore JSON parse errors for non-JSON error responses
+
+      return response.json() as Promise<T>;
+    } catch (error) {
+      lastError = error;
+
+      // Only retry on network-level failures (cold start / server waking up).
+      // Do not retry HTTP errors (4xx / 5xx) — those are real responses.
+      if (error instanceof ApiError || !isNetworkError(error)) {
+        throw error;
+      }
+
+      // If the request was explicitly aborted, do not retry.
+      if (options.signal?.aborted) {
+        throw error;
+      }
+
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_DELAYS_MS[attempt])
+        );
+      }
     }
-    throw new ApiError(response.status, errorDetail, rawJson);
   }
 
-  return response.json() as Promise<T>;
+  // All retries exhausted — throw the last network error.
+  throw lastError;
 }
 
 // Authentication API methods
