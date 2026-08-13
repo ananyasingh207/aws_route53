@@ -83,17 +83,40 @@ export default function LoginPage() {
   };
 
   return (
-    <Box
-      margin={{ top: "xxxl" }}
-      padding={{ horizontal: "s" }}
-      className="awsui-polaris-theme"
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        padding: "24px 16px",
+        boxSizing: "border-box",
+      }}
     >
-      <div style={{ maxWidth: "480px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "480px", width: "100%" }}>
         <SpaceBetween size="l">
           <Box textAlign="center">
-            <Header variant="h1" description="AWS Management Console Sign In">
-              Amazon Route 53
-            </Header>
+            <div style={{ marginBottom: "4px" }}>
+              <span
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 700,
+                  color: "#d5dbdb",
+                  letterSpacing: "-0.2px",
+                }}
+              >
+                Amazon Route 53
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: "14px",
+                color: "#8d9096",
+              }}
+            >
+              AWS Management Console Sign In
+            </span>
           </Box>
 
           {errorMessage && (
@@ -159,6 +182,6 @@ export default function LoginPage() {
           </Container>
         </SpaceBetween>
       </div>
-    </Box>
+    </div>
   );
 }

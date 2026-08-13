@@ -61,6 +61,19 @@ export function parseApiError(
 
   // Handle specific HTTP Status Codes
   if (status === 401) {
+    // Distinguish login credential failure from expired session
+    if (
+      context === "auth" ||
+      (typeof rawDetail === "string" && rawDetail.includes("Invalid email or password"))
+    ) {
+      return {
+        title: "Sign-in error",
+        message: "Incorrect email or password.",
+        fieldErrors: { password: "Incorrect email or password." },
+        status: 401,
+        isAuthError: true,
+      };
+    }
     return {
       title: "Session expired",
       message: "Your session has expired. Please sign in again.",
