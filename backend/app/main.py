@@ -1,16 +1,29 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database import engine, Base
+import app.models  # Ensures models are registered before metadata creation
+from app.routers import health
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize SQLite database tables on application startup
+    Base.metadata.create_all(bind=engine)
+    yield
+
 
 app = FastAPI(
     title="AWS Route53 Clone API",
     description="Backend REST API for AWS Route53 Clone",
-    version="0.1.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
-# CORS setup for local development
+# CORS configuration for local development
 origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
@@ -21,7 +34,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/api/health", summary="Health check endpoint")
-async def health_check():
-    return {"status": "ok"}
+# Register modular routers
+app.include_router(health.router)
