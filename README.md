@@ -9,7 +9,7 @@
 
 A full-stack educational clone of the **Amazon Route 53 console**, engineered with **Next.js 14**, **FastAPI**, **SQLAlchemy 2.x**, **SQLite**, and the official **AWS Cloudscape Design System**.
 
-This application reproduces the look, layout, workflow, and user experience of the official AWS Route 53 management console. It provides multi-tenant Hosted Zone management, Resource Record Sets management across 9 supported DNS record types, debounced server-side search, type filtering, server-side pagination, HttpOnly cookie-based session authentication, and automated integration testing.
+This application reproduces the look, layout, workflow, and user experience of the official AWS Route 53 management console. It provides multi-tenant Hosted Zone management, Resource Record Sets management across 9 supported DNS record types, debounced server-side search, type filtering, server-side pagination, and HttpOnly cookie-based session authentication.
 
 > [!IMPORTANT]
 > **Educational Clone Disclaimer**: This project is built for educational, learning, and portfolio demonstration purposes. It **does not connect to live AWS services**, does not register domain names, and does not alter public internet DNS routing.
@@ -29,8 +29,6 @@ This application reproduces the look, layout, workflow, and user experience of t
 - [Repository Structure](#-repository-structure)
 - [Local Setup & Installation](#-local-setup--installation)
 - [Database Seeding Instructions](#-database-seeding-instructions)
-- [Testing & Automated Verification](#-testing--automated-verification)
-- [Project Limitations & Future Roadmap](#-project-limitations--future-roadmap)
 
 ---
 
@@ -61,10 +59,6 @@ Amazon Route 53 is AWS's highly available and scalable cloud Domain Name System 
 | **Cloudscape Console UI** | Complete | Built exclusively with `@cloudscape-design/*` components |
 | **Responsive Design** | Complete | Adapts across Desktop, Tablet, and Mobile viewports |
 | **User-Friendly Error Handling** | Complete | Intercepts Pydantic arrays & maps field errors to `FormField` |
-| **Automated Testing** | Complete | 32 backend pytest integration tests against isolated DB |
-| **BIND Import / Export** | Planned | Out of scope for current release |
-| **JSON Export** | Planned | Out of scope for current release |
-| **Real AWS Integration** | Not Implemented | Replaced by FastAPI + SQLite backend |
 
 ---
 
@@ -252,7 +246,6 @@ aws_route53_clone/
 │   │   ├── dependencies.py # Dependency injection (get_db, get_current_user)
 │   │   ├── routers/      # API routers (health.py, auth.py, hosted_zones.py, records.py)
 │   │   └── services/     # Business logic services
-│   ├── tests/            # Automated pytest integration test suite
 │   ├── seed_db.py        # Database seeding script
 │   ├── route53.db        # Development SQLite database
 │   └── requirements.txt  # Python dependencies
@@ -331,50 +324,3 @@ SUCCESS: Successfully seeded database!
 - Hosted Zones created: 20 (Total in DB: 21)
 - DNS Records created: 100 (Total in DB: 100)
 ```
-
----
-
-## 🧪 Testing & Automated Verification
-
-### Backend Integration Test Suite
-Automated pytest tests execute against an isolated temporary SQLite database (`test_route53.db`) without touching the development database.
-
-```bash
-cd backend
-.\venv\Scripts\pytest.exe -v
-```
-
-Expected Output:
-```text
-======================== 32 passed, 1 warning in 7.07s ========================
-```
-
-### Frontend Production Build
-To verify type safety and static page generation:
-
-```bash
-cd frontend
-npm run build
-```
-
-Expected Output:
-```text
-✓ Generating static pages (11/11)
-Finalizing page optimization ...
-```
-
----
-
-## 🚀 Project Limitations & Future Roadmap
-
-### Current Limitations
-- **Mocked Authentication**: Uses local database authentication rather than AWS IAM / Cognito.
-- **No Internet DNS Routing**: Changes made inside the clone do not affect real internet DNS resolution.
-- **Local SQLite**: Database persistence is configured for local development (`route53.db`).
-
-### Future Roadmap
-- [ ] BIND Zone File Import & Export
-- [ ] JSON Record Export
-- [ ] Bulk Record Creation / Deletion Operations
-- [ ] Health Checks & Failover Routing Simulation
-- [ ] Dark Mode Support using Cloudscape Design System tokens
