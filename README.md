@@ -25,6 +25,21 @@ The application uses an HttpOnly cookie-based session architecture (`route53_ses
 - `GET /api/auth/me` — Protected endpoint returning the current user profile (requires `route53_session` cookie).
 - `POST /api/auth/logout` — Clears the `route53_session` cookie.
 
+## Hosted Zones API
+
+All Hosted Zone endpoints require authentication via the `route53_session` HttpOnly cookie and enforce strict user data isolation.
+
+### Endpoints
+- `POST /api/hosted-zones` — Creates a new Hosted Zone owned by the authenticated user.
+  - Body: `{"name": "example.com", "zone_type": "Public", "description": "My domain", "private_zone": false}`
+  - Rejects duplicate names for the same user with `409 Conflict`.
+- `GET /api/hosted-zones` — Lists, searches, and paginates Hosted Zones belonging to the user.
+  - Query Params: `search` (case-insensitive substring search), `page` (default 1), `limit` (default 10, max 100).
+  - Response: `{"items": [...], "total": 25, "page": 1, "limit": 10}`
+- `GET /api/hosted-zones/{id}` — Retrieves details of a specific Hosted Zone. Returns `404 Not Found` if the zone does not exist or belongs to another user.
+- `PUT /api/hosted-zones/{id}` — Updates an existing Hosted Zone. Checks for duplicate names within the user's zones (`409 Conflict`).
+- `DELETE /api/hosted-zones/{id}` — Deletes a Hosted Zone owned by the user (cascades to associated records).
+
 ## Project Structure
 
 ```
@@ -41,8 +56,8 @@ route53-clone/
 │   │   ├── models.py     # User, HostedZone, DNSRecord DB models
 │   │   ├── schemas.py    # Pydantic v2 schemas
 │   │   ├── dependencies.py # FastAPI dependency injections (get_db, get_current_user)
-│   │   ├── routers/      # API route modules (health.py, auth.py)
-│   │   └── services/     # Business services (auth_service.py)
+│   │   ├── routers/      # API route modules (health.py, auth.py, hosted_zones.py)
+│   │   └── services/     # Business services (auth_service.py, hosted_zone_service.py)
 │   ├── route53.db        # SQLite database file
 │   ├── requirements.txt  # Python dependencies
 │   └── .env.example      # Sample environment variable settings
@@ -106,4 +121,4 @@ route53-clone/
 
 ## Current Project Status
 
-> **Phase 4 Complete (Mock Authentication)**: SQLite database layer, Pydantic v2 schemas, and HttpOnly JWT authentication (login, logout, current-user profile, dev user initialization) are fully implemented. Hosted Zones CRUD and DNS Records CRUD endpoints have **not** yet been implemented.
+> **Phase 5 Complete (Hosted Zones Backend CRUD)**: Full REST API for Hosted Zones with domain name normalization, duplicate name protection, user data isolation, search, and pagination is complete. DNS Records CRUD endpoints have **not** yet been implemented.

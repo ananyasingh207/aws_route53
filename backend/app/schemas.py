@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from typing import List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 # ==========================================
@@ -60,16 +60,33 @@ class AuthResponse(BaseModel):
 
 class HostedZoneBase(BaseModel):
     name: str = Field(..., min_length=1, description="Domain name (e.g. example.com)")
-    zone_type: str = Field(..., min_length=1, description="Zone type (e.g. Public / Private)")
+    zone_type: str = Field(..., min_length=1, description="Zone type ('Public' or 'Private')")
     description: Optional[str] = Field(None, description="Optional hosted zone description")
     private_zone: bool = Field(False, description="Whether this is a private hosted zone")
 
-    @field_validator("name", "zone_type")
+    @field_validator("name")
     @classmethod
-    def fields_must_not_be_blank(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("field must not consist entirely of whitespace")
-        return v.strip()
+    def normalize_domain_name(cls, v: str) -> str:
+        cleaned = v.strip().lower().rstrip(".")
+        if not cleaned:
+            raise ValueError("Hosted zone name must not be empty or whitespace")
+        return cleaned
+
+    @field_validator("zone_type")
+    @classmethod
+    def validate_zone_type_str(cls, v: str) -> str:
+        formatted = v.strip().capitalize()
+        if formatted not in ["Public", "Private"]:
+            raise ValueError("zone_type must be either 'Public' or 'Private'")
+        return formatted
+
+    @model_validator(mode="after")
+    def validate_zone_privacy(self):
+        if self.zone_type == "Public" and self.private_zone is True:
+            raise ValueError("Public hosted zone cannot have private_zone=True")
+        if self.zone_type == "Private":
+            self.private_zone = True
+        return self
 
 
 class HostedZoneCreate(HostedZoneBase):
@@ -82,12 +99,33 @@ class HostedZoneUpdate(BaseModel):
     description: Optional[str] = None
     private_zone: Optional[bool] = None
 
-    @field_validator("name", "zone_type")
+    @field_validator("name")
     @classmethod
-    def optional_fields_must_not_be_blank(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.strip():
-            raise ValueError("field must not consist entirely of whitespace")
-        return v.strip() if v is not None else None
+    def normalize_optional_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        cleaned = v.strip().lower().rstrip(".")
+        if not cleaned:
+            raise ValueError("Hosted zone name must not be empty or whitespace")
+        return cleaned
+
+    @field_validator("zone_type")
+    @classmethod
+    def validate_optional_zone_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        formatted = v.strip().capitalize()
+        if formatted not in ["Public", "Private"]:
+            raise ValueError("zone_type must be either 'Public' or 'Private'")
+        return formatted
+
+    @model_validator(mode="after")
+    def validate_update_privacy(self):
+        if self.zone_type == "Public" and self.private_zone is True:
+            raise ValueError("Public hosted zone cannot have private_zone=True")
+        if self.zone_type == "Private" and self.private_zone is False:
+            raise ValueError("Private hosted zone cannot have private_zone=False")
+        return self
 
 
 class HostedZoneResponse(HostedZoneBase):
@@ -97,6 +135,13 @@ class HostedZoneResponse(HostedZoneBase):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class HostedZoneListResponse(BaseModel):
+    items: List[HostedZoneResponse]
+    total: int
+    page: int
+    limit: int
 
 
 # ==========================================
