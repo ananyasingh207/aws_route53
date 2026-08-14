@@ -72,9 +72,12 @@ export default function ConsoleShell({
           }}
           utilities={[
             {
-              type: "button",
+              type: "menu-dropdown",
               iconName: "settings",
               ariaLabel: "Settings",
+              items: [
+                { id: "settings-coming-soon", text: "Coming soon" },
+              ],
             },
             {
               type: "menu-dropdown",

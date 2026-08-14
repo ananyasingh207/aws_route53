@@ -38,3 +38,20 @@ button[aria-label*="navigation"] svg,
   display: block !important;
   margin: auto !important;
 }
+
+[class*="top-navigation"] [class*="header"],
+[class*="top-navigation"] [class*="title"],
+[class*="top-navigation"] [class*="menu-dropdown"] {
+  font-weight: 400 !important;
+  font-size: 13px !important;
+}
+
+ul[role="menu"] [role="menuitem"],
+ul[role="menu"] [class*="item-element"],
+ul[role="menu"] [class*="label"] {
+  font-weight: 400 !important;
+  font-size: 13px !important;
+  text-align: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
