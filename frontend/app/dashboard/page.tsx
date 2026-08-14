@@ -76,7 +76,7 @@ export default function DashboardPage() {
         header={
           <Header
             variant="h1"
-            description="Scalable Domain Name System (DNS) web service console."
+            description="Domain Name System (DNS) web service console."
           >
             Dashboard
           </Header>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
       >
         <SpaceBetween size="m">
           <Alert type="info" header="AWS Route 53 Console">
-            Welcome to the Amazon Route 53 Console. Connect user requests to infrastructure running in AWS or on-premises.
+            Welcome to the Amazon Route 53 Console. Connect user requests to infrastructure running in AWS or on premises.
           </Alert>
 
           {error && (
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           >
             <SpaceBetween size="xs">
               <Box variant="p">
-                Amazon Route 53 effectively connects user requests to infrastructure running in AWS or on-premises.
+                Amazon Route 53 effectively connects user requests to infrastructure running in AWS or on premises.
               </Box>
               <Box variant="p">
                 Use the navigation pane on the left or click on <Link href="/hosted-zones">Hosted zones</Link> to view, create, and manage your domain name records and DNS routing policies.
