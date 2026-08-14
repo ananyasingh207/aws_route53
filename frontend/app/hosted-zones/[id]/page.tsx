@@ -422,19 +422,16 @@ export default function HostedZoneDetailPage() {
                   id: "name",
                   header: "Record name",
                   cell: (item) => item.name,
-                  sortingField: "name",
                 },
                 {
                   id: "type",
                   header: "Type",
                   cell: (item) => item.type,
-                  sortingField: "type",
                 },
                 {
                   id: "ttl",
                   header: "TTL (seconds)",
                   cell: (item) => item.ttl,
-                  sortingField: "ttl",
                 },
                 {
                   id: "value",

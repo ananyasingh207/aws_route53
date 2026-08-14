@@ -297,13 +297,11 @@ export default function HostedZonesPage() {
                 cell: (item) => (
                   <Link href={`/hosted-zones/${item.id}`}>{item.name}</Link>
                 ),
-                sortingField: "name",
               },
               {
                 id: "zone_type",
                 header: "Type",
                 cell: (item) => item.zone_type,
-                sortingField: "zone_type",
               },
               {
                 id: "description",
