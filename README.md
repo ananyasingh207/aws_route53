@@ -130,7 +130,7 @@ sequenceDiagram
 
 ## 🗄️ Database Schema & ERD
 
-The database uses SQLite managed via SQLAlchemy 2.x ORM models (`app/models.py`).
+Hosted Zones, DNS Records, and user data are stored in SQLite. Persistence is guaranteed for local development; the deployed demo uses ephemeral SQLite storage, so data may reset after a deployment or restart. Database tables are managed via SQLAlchemy 2.x ORM models (`app/models.py`).
 
 ```mermaid
 erDiagram
@@ -237,7 +237,7 @@ The application uses a centralized error translation engine ([lib/errors.ts](fil
 
 - **Mocked JWT Authentication**: Uses mocked JWT authentication signed by a backend secret key (`JWT_SECRET_KEY`). Root User credentials (`ROOT_USER_EMAIL`, `ROOT_USER_PASSWORD`, `ROOT_USER_NAME`) are configured via environment variables and initialized idempotently on backend startup.
 - **Dual Authentication Mechanism**: Supports both `Authorization: Bearer <token>` HTTP headers (enabling cross-site production deployments) and `route53_session` HttpOnly cookies (for same-site local development).
-- **SQLite Database Persistence**: Database persistence is guaranteed in local development (`backend/route53.db`). The cloud demo hosted on Render free tier uses ephemeral SQLite storage, resetting on service restarts (where Root User credentials are auto-initialized).
+- **Database**: Hosted Zones, DNS Records, and user data are stored in SQLite. Persistence is guaranteed for local development; the deployed demo uses ephemeral SQLite storage, so data may reset after a deployment or restart.
 - **Educational Scope**: Designed as an educational/portfolio clone of the AWS Route 53 console. It does not interface with live AWS APIs, register real domain names, or modify public DNS routing tables.
 
 ---
