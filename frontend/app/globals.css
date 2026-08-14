@@ -40,10 +40,19 @@ button[aria-label*="navigation"] svg,
 }
 
 [class*="top-navigation"] [class*="header"],
-[class*="top-navigation"] [class*="title"],
 [class*="top-navigation"] [class*="menu-dropdown"] {
   font-weight: 400 !important;
   font-size: 13px !important;
+}
+
+/* Amazon Route 53 top-left navbar title */
+[class*="top-navigation"] [class*="identity"] [class*="title"],
+[class*="top-navigation"] [class*="identity"] span,
+[class*="top-navigation"] [class*="identity"] a,
+a[class*="identity"],
+[class*="identity-title"] {
+  font-weight: 700 !important;
+  font-size: 19px !important;
 }
 
 ul[role="menu"] [role="menuitem"],

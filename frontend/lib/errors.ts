@@ -38,7 +38,7 @@ export function parseApiError(
   ) {
     return {
       title: "Connection error",
-      message: "Couldn't connect to the server. The server may be waking up — please wait a moment and try again.",
+      message: "Couldn't connect to the server. The server may be waking up, please wait a moment and try again.",
       fieldErrors: {},
       isNetworkError: true,
     };
