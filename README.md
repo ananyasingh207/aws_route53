@@ -10,7 +10,8 @@
 A full-stack educational clone of the **Amazon Route 53 console**, engineered with **Next.js 14**, **FastAPI**, **SQLAlchemy 2.x**, **SQLite**, and the official **AWS Cloudscape Design System**.
 
 🔗 **Live Application Demo**: [https://aws-route53-red.vercel.app](https://aws-route53-red.vercel.app)  
-📖 **Live OpenAPI / Swagger Docs**: [https://aws-route53-i9ow.onrender.com/docs](https://aws-route53-i9ow.onrender.com/docs)
+📖 **Live OpenAPI / Swagger Docs**: [https://aws-route53-i9ow.onrender.com/docs](https://aws-route53-i9ow.onrender.com/docs)  
+🔑 **Demo Credentials**: Email: `admin@example.com` | Password: `password`
 
 This application reproduces the look, layout, workflow, and user experience of the official AWS Route 53 management console. It provides multi-tenant Hosted Zone management, Resource Record Sets management across 9 supported DNS record types, debounced server-side search, type filtering, server-side pagination, and dual JWT authentication (Bearer header & HttpOnly cookie).
 
@@ -335,7 +336,7 @@ Set the following environment variables in the Render Dashboard (`Environment` t
 | `JWT_SECRET_KEY` | *(Generate a 32+ char secret string)* | **Required**. Secret key for signing JWT session cookies. Startup fails if missing! |
 | `CORS_ORIGINS` | `https://aws-route53-red.vercel.app,http://localhost:3000` | **Required**. Comma-separated list of allowed frontend origins for credentials/cookies. |
 | `ROOT_USER_EMAIL` | `admin@example.com` | Root admin email created automatically on application startup. |
-| `ROOT_USER_PASSWORD` | `your_secure_password_here` | Root admin password (hashed immediately via Argon2/Bcrypt). |
+| `ROOT_USER_PASSWORD` | `password` | Root admin password (hashed immediately via Argon2/Bcrypt). |
 | `ROOT_USER_NAME` | `Route53 Administrator` | Name for the initial admin account. |
 | `DATABASE_URL` | `sqlite:///./route53.db` | SQLAlchemy database URL. |
 | `JWT_ALGORITHM` | `HS256` | JWT signing algorithm. |
